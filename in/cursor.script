@@ -1,10 +1,15 @@
 --- Refer to cursor.md for documentation
 
 go.property("action_id", hash("touch"))
-go.property("drag", true)
+go.property("drag", false)
 go.property("drag_threshold", 20)
 go.property("acquire_input_focus", false)
 go.property("notify_own_gameobject", true)
+
+go.property("notify_pressed", true)
+go.property("notify_released", false)
+go.property("notify_cursor_over", false)
+go.property("notify_cursor_out", false)
 
 local COLLISION_RESPONSE = hash("collision_response")
 local INPUT = hash("input")
@@ -57,14 +62,18 @@ function update(self, dt)
 			self.state.dragging = false
 			notify_event(self, self.state.pressed_id, self.state.pressed_group, "drag_end")
 		end
-		notify_event(self, self.state.pressed_id, self.state.pressed_group, "released")
+		if self.notify_released then
+			notify_event(self, self.state.pressed_id, self.state.pressed_group, "released")
+		end
 		self.state.pressed = false
 		self.state.pressed_id = nil
 		self.state.pressed_group = nil
 	end
 
 	if self.state.over_id and self.state.over_id ~= self.collision_id then
-		notify_event(self, self.state.over_id, self.state.over_group, "cursor_out")
+		if self.notify_cursor_out then
+			notify_event(self, self.state.over_id, self.state.over_group, "cursor_out")
+		end
 		self.state.over_id = nil
 		self.state.over_group = nil
 	end
@@ -72,7 +81,9 @@ function update(self, dt)
 	if self.collision_id and self.state.over_id ~= self.collision_id then
 		self.state.over_id = self.collision_id
 		self.state.over_group = self.collision_group
-		notify_event(self, self.state.over_id, self.state.over_group, "cursor_over")
+		if self.notify_cursor_over then
+			notify_event(self, self.state.over_id, self.state.over_group, "cursor_over")
+		end
 	end
 
 	if self.pressed and not self.state.pressed and self.state.over_id then
@@ -81,7 +92,9 @@ function update(self, dt)
 		self.state.pressed_group = self.state.over_group
 		self.state.pressed_pos = go.get_position()
 		self.state.pressed_offset = self.state.pressed_pos - go.get_position(self.state.over_id)
-		notify_event(self, self.state.pressed_id, self.state.pressed_group, "pressed")
+		if self.notify_pressed then
+			notify_event(self, self.state.pressed_id, self.state.pressed_group, "pressed")
+		end
 	end
 
 	if self.drag and self.state.pressed and not self.state.dragging then
